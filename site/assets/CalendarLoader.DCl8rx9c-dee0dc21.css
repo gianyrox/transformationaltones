@@ -1,0 +1,1 @@
+.calendars-ellipsis-loader{align-items:center;display:flex;height:700px;justify-content:center;padding:15px 32px;width:100%}.calendars-ellipsis-loader .bt-spinner{animation:spin 1s linear infinite;background-color:transparent;border:4px solid #fff;border-radius:50%;height:60px;width:60px}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(1turn)}}

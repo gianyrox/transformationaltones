@@ -1,0 +1,15 @@
+# Raw scraped GoHighLevel HTML — input to the build, not shipped.
+scrape/
+
+# Deduplicated downloaded asset pool (ROOT /assets only) — the build copies only
+# the USED assets into site/assets/. The full pool stays out of the repo to avoid
+# committing unused/oversized files. NOTE: leading slash scopes this to the repo
+# root so it does NOT match the shipped site/assets/ directory.
+/assets/
+
+# Vercel / tooling
+.vercel/
+node_modules/
+.DS_Store
+*.log
+__pycache__/
