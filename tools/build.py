@@ -62,6 +62,7 @@ TITLES = {
     "/transformationalblog": "Transformational Tones Blog — Sound, Movement & Healing Insights",
     "/brooklyn-studio": "Brooklyn Studio — Transformational Tones",
     "/moonsters": "KT × Moonsters DAO — Transformational Tones",
+    "/kt-the-alchemist": "KT The Alchemist — Transformational Tones",
     "/post/astologycare": "Astrology as Self-Care — Transformational Tones",
     "/post/gemini-full-moon-120425": "Gemini Full Moon — Transformational Tones",
     "/post/new-moon-121925": "New Moon — Transformational Tones",
@@ -73,7 +74,7 @@ INTERNAL_PATHS = {
     "/home", "/contact", "/cosmic-connection", "/events", "/meetkt",
     "/membership", "/nsny-studio", "/privacy", "/sound-bath-sunday",
     "/soundtherapy", "/terms", "/transformationalblog", "/blog",
-    "/brooklyn-studio", "/moonsters",
+    "/brooklyn-studio", "/moonsters", "/kt-the-alchemist",
     "/post/astologycare", "/post/gemini-full-moon-120425",
     "/post/new-moon-121925", "/post/quiethobby",
 }
@@ -219,10 +220,16 @@ def set_favicon(text):
 
 
 # Footer "COMPANY" column links were href="#" placeholders wired by stripped GHL
-# JS. Point them at real destinations: ABOUT US -> /meetkt, OUR TEAM -> /moonsters.
+# JS. Point them at real destinations.
+#   ABOUT US -> /meetkt           (the bio hub; links out to both bio pages)
+#   OUR TEAM -> /kt-the-alchemist (the official KT The Alchemist bio)
+# The COMPANY column only has two buttons; cloning the complex GHL button markup
+# for a third is fragile, so /moonsters stays reachable via in-page cross-links
+# (every page's footer -> /meetkt, which one-clicks to /moonsters; bio pages also
+# cross-link directly). All three bio surfaces remain reachable from every page.
 FOOTER_FIXES = {
-    "button-MV4Ucvs8L5_btn": "/meetkt",     # ABOUT US
-    "button-ZfGYv6T7ry_btn": "/moonsters",  # OUR TEAM
+    "button-MV4Ucvs8L5_btn": "/meetkt",           # ABOUT US
+    "button-ZfGYv6T7ry_btn": "/kt-the-alchemist",  # OUR TEAM
 }
 
 def fix_footer_links(text):
@@ -237,35 +244,50 @@ def fix_footer_links(text):
 # A cross-link card to /moonsters, injected into the meetkt page. Uses the
 # site's own c-section / c-heading / c-paragraph / c-button classes so it
 # inherits the existing design system (no new styling introduced).
-MOONSTERS_CARD = (
-    '<div class="fullSection noBorder radius0 none c-section c-wrapper section-moonsters-xlink" '
-    'style="padding:60px 20px;" id="section-moonsters-xlink">'
-    '<div class="inner">'
-    '<div class="row-align-center noBorder radius0 none c-row c-wrapper">'
-    '<div class="inner"><div class="noBorder radius0 none c-column c-wrapper">'
-    '<div class="vertical inner" style="max-width:760px;margin:0 auto;text-align:center;">'
-    '<div class="c-heading c-wrapper"><div class="text-output"><div>'
-    '<h2>KT &times; Moonsters DAO</h2></div></div></div>'
-    '<div class="c-paragraph c-wrapper"><div class="text-output"><div>'
+def _bio_xlink_card(section_id, heading, body_html):
+    return (
+        '<div class="fullSection noBorder radius0 none c-section c-wrapper '
+        + section_id + '" style="padding:60px 20px;" id="' + section_id + '">'
+        '<div class="inner">'
+        '<div class="row-align-center noBorder radius0 none c-row c-wrapper">'
+        '<div class="inner"><div class="noBorder radius0 none c-column c-wrapper">'
+        '<div class="vertical inner" style="max-width:760px;margin:0 auto;text-align:center;">'
+        '<div class="c-heading c-wrapper"><div class="text-output"><div>'
+        '<h2>' + heading + '</h2></div></div></div>'
+        '<div class="c-paragraph c-wrapper"><div class="text-output"><div>'
+        + body_html +
+        '</div></div></div>'
+        '</div></div></div></div></div></div>'
+    )
+
+# Official bio card -> /kt-the-alchemist
+ALCHEMIST_CARD = _bio_xlink_card(
+    "section-alchemist-xlink", "KT The Alchemist",
+    '<p>Community builder, sound healing artist, entrepreneur, and creative '
+    'visionary working at the intersection of wellness, music, technology, and '
+    'human transformation &mdash; and the founder of Transformational Tones.</p>'
+    '<p><a href="/kt-the-alchemist">Read the full KT The Alchemist bio &rarr;</a></p>')
+
+# Web3 chapter card -> /moonsters
+MOONSTERS_CARD = _bio_xlink_card(
+    "section-moonsters-xlink", "KT &times; Moonsters DAO",
     '<p>Before Transformational Tones, Kaitlynn helped build community, wellness '
     'programming, and creative strategy for Moonsters DAO &mdash; bridging emerging '
     'Web3 technology with real-world human connection.</p>'
-    '<p><a href="/moonsters">Read more about KT &times; Moonsters DAO &rarr;</a></p>'
-    '</div></div></div>'
-    '</div></div></div></div></div></div>'
-)
+    '<p><a href="/moonsters">Read more about KT &times; Moonsters DAO &rarr;</a></p>')
 
 
 def build_page(src_rel, out_path):
     src = os.path.join(SCRAPE, src_rel)
     text = open(src, encoding="utf-8").read()
 
-    # inject the Moonsters cross-link card into the meetkt page (before the
-    # "A Note From Kaitlynn" section).
+    # inject the bio cross-link cards into the meetkt page (before the
+    # "A Note From Kaitlynn" section): the official bio first, then the
+    # Web3/Moonsters chapter.
     if out_path == "/meetkt":
         anchor = '<div class="fullSection noBorder radius0 none c-section c-wrapper section-j0cF6tN5yG"'
         if anchor in text:
-            text = text.replace(anchor, MOONSTERS_CARD + anchor, 1)
+            text = text.replace(anchor, ALCHEMIST_CARD + MOONSTERS_CARD + anchor, 1)
 
     text = strip_runtime(text)
     text, misses = rewrite_assets(text)
@@ -340,17 +362,20 @@ def main():
         if misses:
             all_misses[out_path] = misses
 
-    # Moonsters page is generated separately by build_moonsters (imported below).
-    import build_moonsters
-    build_moonsters.build(SITE, SCRAPE, TITLES, strip_runtime, rewrite_assets,
-                          rewrite_links, normalize_head, MOBILE_MENU_SHIM, ROOT)
+    # Bio pages (/moonsters, /kt-the-alchemist) are generated from founder
+    # markdown by the generic bio builder, cloning the privacy.html chrome.
+    import build_bio_page
+    build_bio_page.build(SITE, SCRAPE, ROOT, strip_runtime, rewrite_assets,
+                         rewrite_links, normalize_head, fix_footer_links,
+                         MOBILE_MENU_SHIM)
+    bio_count = 2
 
     # collect + copy assets the site actually uses
     site_files = glob.glob(os.path.join(SITE, "**", "*.html"), recursive=True)
     used = collect_used_assets(site_files)
     copied, resolved = copy_assets(used)
 
-    print("pages built:", len(PAGES) + 1)
+    print("pages built:", len(PAGES) + bio_count)
     print("assets referenced+resolved:", len(resolved), "| copied:", copied)
     if all_misses:
         print("\nUNMAPPED asset URLs (left remote):")
