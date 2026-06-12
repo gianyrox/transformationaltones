@@ -171,10 +171,19 @@ MOBILE_MENU_SHIM = """
 </script>
 """
 
+# Third-party booking scripts to PRESERVE (kept remote so booking keeps working).
+KEEP_SCRIPT_HOSTS = ("mindbodyonline.com",)
+
 def strip_runtime(text):
-    """Remove Nuxt hydration data + GHL module scripts; keep inline <style>."""
-    # Remove all <script>...</script> blocks (Nuxt data + module loaders).
-    text = re.sub(r'<script\b[^>]*>.*?</script>', '', text, flags=re.S|re.I)
+    """Remove Nuxt hydration data + GHL module scripts; keep inline <style> and
+    third-party booking scripts (MindBody) so class signup keeps working."""
+    def script_repl(m):
+        block = m.group(0)
+        # keep external booking widget scripts (MindBody healcode + branded embed)
+        if any(h in block for h in KEEP_SCRIPT_HOSTS):
+            return block
+        return ""
+    text = re.sub(r'<script\b[^>]*>.*?</script>', script_repl, text, flags=re.S|re.I)
     # Remove self-closing/standalone module preload + prefetch links to stcdn JS.
     text = re.sub(r'<link\b[^>]*stcdn\.leadconnectorhq\.com/_preview/[^>]*\.js[^>]*>', '', text, flags=re.I)
     text = re.sub(r'<link\b[^>]*rel="(?:modulepreload|prefetch|preload)"[^>]*\.js[^>]*>', '', text, flags=re.I)
@@ -198,8 +207,8 @@ def normalize_head(text, out_path):
     # neutralize inline @import url('https://fonts.googleapis.com/...') in <style> blocks
     # (the combined local bundle already contains every family used site-wide).
     text = re.sub(r"@import\s+url\(['\"]?https://fonts\.googleapis\.com/[^)]*\)\s*;?", "", text, flags=re.I)
-    # drop now-dead preconnect hints to remote CDNs (no remote assets remain).
-    text = re.sub(r'<link\b[^>]*rel="preconnect"[^>]*(?:gstatic|googleapis|leadconnectorhq|filesafe)[^>]*>', '', text, flags=re.I)
+    # drop now-dead preconnect / dns-prefetch hints to remote CDNs.
+    text = re.sub(r'<link\b[^>]*rel="(?:preconnect|dns-prefetch)"[^>]*(?:gstatic|googleapis|leadconnectorhq|filesafe)[^>]*>', '', text, flags=re.I)
     # inject local fonts css right before </head>
     text = text.replace("</head>", local_fonts + "</head>", 1)
     return text
